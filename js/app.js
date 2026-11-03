@@ -5,7 +5,7 @@
 const KEY='daybreak.planner.v1';
 const GUIDE_KEY='daybreak.guide.seen';
 const ALL=[0,1,2,3,4,5,6];
-const WEEK_ORDER=[1,2,3,4,5,6,0];
+const WEEK_ORDER=[0,1,2,3,4,5,6];   // chips run Sun -> Sat
 const DAY_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAY_LONG=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -40,7 +40,7 @@ const SOUNDS=[
 ];
 const CHECK='<svg viewBox="0 0 16 16" aria-hidden="true"><path class="ck" pathLength="1" d="M3 8.5l3.2 3.2L13 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CHEV='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const EMPTY={done:{},subs:{},extra:{},notes:{},skip:{}};
+const EMPTY={done:{},subs:{},extra:{},notes:{},skip:{},edits:{},oneOff:[]};
 
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
@@ -92,7 +92,7 @@ function freshState(){
   const p=parseSummary(DEFAULT_SUMMARY);
   return {v:2,summary:DEFAULT_SUMMARY,days:[...ALL],total:p.total,tasks:p.tasks.map(t=>({...t,days:[...ALL]})),dates:{},dayNotes:{},
     remind:{on:true,lead:5,sound:true,system:false,awake:false},
-    settings:{theme:'system',accent:0,haptics:true,tickSound:true,tickIdx:0,untickIdx:1},fired:{}};
+    settings:{theme:'system',themeSet:false,accent:0,haptics:true,tickSound:true,tickIdx:0,untickIdx:1},fired:{}};
 }
 function load(){
   try{
@@ -103,14 +103,19 @@ function load(){
   return null;
 }
 function normalize(){
-  if(!Array.isArray(state.days)||!state.days.length) state.days=[...ALL];
+  if(!Array.isArray(state.days)) state.days=[...ALL];
   if(typeof state.summary!=='string') state.summary=DEFAULT_SUMMARY;
   if(!state.dayNotes||typeof state.dayNotes!=='object') state.dayNotes={};
   state.remind=Object.assign({on:true,lead:5,sound:true,system:false,awake:false},state.remind||{});
-  state.settings=Object.assign({theme:'system',accent:0,haptics:true,tickSound:true,tickIdx:0,untickIdx:1},state.settings||{});
+  state.settings=Object.assign({theme:'system',themeSet:false,accent:0,haptics:true,tickSound:true,tickIdx:0,untickIdx:1},state.settings||{});
+  // Until the user picks Light or Dark in the Function tab, follow the device (older saves may hold a leftover value)
+  if(!state.settings.themeSet) state.settings.theme='system';
   const todayK=todayKey(),fired={};
   if(state.fired&&typeof state.fired==='object') for(const k of Object.keys(state.fired)) if(k.startsWith(todayK)) fired[k]=1;
   state.fired=fired;
+  if(state.dates&&typeof state.dates==='object') for(const k of Object.keys(state.dates)){
+    const r=state.dates[k]; r.edits=(r.edits&&typeof r.edits==='object')?r.edits:{}; r.oneOff=Array.isArray(r.oneOff)?r.oneOff:[];
+  }
   state.tasks=(Array.isArray(state.tasks)?state.tasks:[]).map(t=>({...t,
     days:Array.isArray(t.days)?t.days:[...ALL],subs:Array.isArray(t.subs)?t.subs:[],focus:+t.focus||0,kind:KIND_LABEL[t.kind]?t.kind:'other'}));
 }
@@ -118,13 +123,19 @@ let state=load()||freshState();
 normalize();
 let saveT;
 function save(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} },150); }
-const rec=dk=>state.dates[dk]||(state.dates[dk]={done:{},subs:{},extra:{},notes:{},skip:{}});
+const rec=dk=>state.dates[dk]||(state.dates[dk]={done:{},subs:{},extra:{},notes:{},skip:{},edits:{},oneOff:[]});
 const peek=dk=>state.dates[dk]||EMPTY;
+/* The tasks for one date: repeating tasks with that date's changes, plus its one-off tasks, in time order. Skipped ones are included. */
+function tasksFor(date){
+  const wd=date.getDay(), d=peek(dkey(date));
+  const base=state.tasks.filter(t=>t.days.includes(wd)).map(t=>(d.edits&&d.edits[t.id])?{...t,...d.edits[t.id]}:t);
+  return base.concat(d.oneOff||[]).sort(byTime);
+}
 
 /* ---------- UI state ---------- */
 const ui={
   view:'day', date:startOfDay(new Date()), open:new Set(), lastKey:'', animId:null, focusId:null, sheet:null,
-  form:{open:false,title:'',start:null,end:null,kind:'auto',days:[...ALL]}
+  form:{open:false,title:'',start:null,end:null,kind:'auto',days:[...ALL],dates:[],replaceId:null,dateOpen:false}
 };
 { const hv=location.hash.slice(1); if(TAB_IDS.includes(hv)) ui.view=hv; }
 
@@ -198,7 +209,10 @@ function toggleDay(id,wd){
 }
 function deleteTask(id){
   const snap=JSON.stringify(state);
-  state.tasks=state.tasks.filter(t=>t.id!==id); save(); render();
+  const r=rec(curKey());
+  if((r.oneOff||[]).some(x=>x.id===id)) r.oneOff=r.oneOff.filter(x=>x.id!==id);   // a one-off task: this date only
+  else state.tasks=state.tasks.filter(t=>t.id!==id);
+  save(); render();
   toast('Task removed.',{label:'Undo',fn:()=>restore(snap)});
 }
 
@@ -211,12 +225,13 @@ function stepRow(label,checked,onToggle,onRemove){
     onRemove?h('button',{type:'button',class:'rm','aria-label':'Remove '+label,onclick:onRemove},'×'):null);
 }
 function statFor(date){
-  const wd=date.getDay(),d=peek(dkey(date));
-  const act=state.tasks.filter(t=>t.days.includes(wd)&&!d.skip[t.id]);
+  const d=peek(dkey(date));
+  const act=tasksFor(date).filter(t=>!d.skip[t.id]);
   return {total:act.length,done:act.filter(t=>d.done[t.id]).length};
 }
 function detailFor(t,d){
   const subs=t.subs||[],extra=d.extra[t.id]||[];
+  const oneOff=(d.oneOff||[]).some(x=>x.id===t.id);
   const dl=DAY_LONG[ui.date.getDay()]+' '+ui.date.getDate();
   return h('div',{class:'detail'},
     subs.length?h('div',null,h('h4',null,'Steps in this block'),
@@ -226,6 +241,9 @@ function detailFor(t,d){
       h('form',{class:'addstep',onsubmit:e=>{e.preventDefault();addExtra(t.id,e.target.elements.step.value);}},
         h('input',{class:'inp',name:'step',id:'step-'+t.id,placeholder:'Add a step for this date','aria-label':'New step for this date',autocomplete:'off'}),
         h('button',{class:'btn small',type:'submit'},'Add'))),
+    oneOff?null:h('div',null,h('h4',null,'Shows on · '+daysLabel(t.days)),
+      h('div',{class:'chips'},WEEK_ORDER.map(wd=>h('button',{type:'button',class:'dchip','aria-pressed':String(t.days.includes(wd)),
+        onclick:()=>{ const i=t.days.indexOf(wd); if(i>=0){ if(t.days.length>1) t.days.splice(i,1); } else t.days.push(wd); save(); render(); }},DAY_SHORT[wd])))),
     h('div',null,h('label',{for:'note-'+t.id},'Note for this date'),
       h('textarea',{class:'inp',id:'note-'+t.id,rows:'2',oninput:e=>setNote(t.id,e.target.value)},d.notes[t.id]||'')),
     h('div',{class:'dact'},
@@ -259,7 +277,7 @@ function taskItem(t,d,now,nx){
 function dayView(){
   const date=ui.date,dk=dkey(date),wd=date.getDay(),d=peek(dk);
   const isToday=dk===todayKey();
-  const all=state.tasks.filter(t=>t.days.includes(wd)).sort(byTime);
+  const all=tasksFor(date);
   const act=all.filter(t=>!d.skip[t.id]);
   const fp=sum(act.map(t=>t.focus)),fd=sum(act.filter(t=>d.done[t.id]).map(t=>t.focus));
   const dn=act.filter(t=>d.done[t.id]).length;
@@ -305,9 +323,9 @@ function dayView(){
 }
 
 /* ---------- add view ---------- */
-function plusButton(){
+function plusButton(small){
   const open=ui.form.open;
-  return h('button',{type:'button',class:'plus'+(open?' open':''),'aria-expanded':String(open),'aria-label':open?'Close the new task form':'Add one task',title:'Add one task',
+  return h('button',{type:'button',class:'plus'+(open?' open':'')+(small?' sm':''),'aria-expanded':String(open),'aria-label':open?'Close the new task form':'Add one task',title:'Add one task',
     onclick:()=>{
       const f=ui.form; f.open=!f.open;
       if(f.open){ f.start=defaultStart(); f.days=[...state.days]; f.end=null; f.kind='auto'; ui.focusId='nt-title'; }
@@ -316,6 +334,65 @@ function plusButton(){
 }
 function autoHint(){
   const f=ui.form; return f.title.trim()?'Looks like: '+KIND_LABEL[kindOf(f.title)]:'Type a title to see the type.';
+}
+/* the chosen dates (each date is one circle) or the repeating days */
+const dateOf=s=>new Date(s+'T00:00');
+const fullDate=d=>DAY_LONG[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()];
+const shortDate=d=>DAY_SHORT[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3);
+function dayPart(f,dayChips){
+  if(!f.dates.length) return [
+    h('span',{class:'field-label'},'Add to day or days'),
+    h('div',{class:'chips'},dayChips),
+    h('div',{class:'presets'},
+      h('button',{type:'button',class:'btn quiet small',onclick:()=>{f.days=[...ALL];render();}},'Every day'),
+      h('button',{type:'button',class:'btn quiet small',onclick:()=>{f.days=[1,2,3,4,5];render();}},'Weekdays'),
+      h('button',{type:'button',class:'btn quiet small',onclick:()=>{f.days=[0,6];render();}},'Weekends')),
+    h('p',{class:'autohint'},'Adds to '+daysLabel(f.days))];
+  const days=f.dates.map(dateOf);
+  const seen=new Set(), choices=[];
+  days.forEach(day=>{
+    const d=peek(dkey(day));
+    tasksFor(day).filter(t=>!d.skip[t.id]).forEach(t=>{ if(!seen.has(t.id)){ seen.add(t.id); choices.push(t); } });
+  });
+  const label=days.length===1?'Only on '+fullDate(days[0]):'On '+days.length+' dates: '+days.map(shortDate).join(', ');
+  return [
+    h('span',{class:'field-label'},label),
+    h('p',{class:'autohint'},'Only these dates. Clear the dates above to use days instead.'),
+    h('span',{class:'field-label'},'Replace a task on these dates (optional)'),
+    choices.length
+      ? h('div',{class:'chips'},choices.map(t=>h('button',{type:'button',class:'dchip','aria-pressed':String(f.replaceId===t.id),
+          onclick:()=>{
+            if(f.replaceId===t.id) f.replaceId=null;
+            else { f.replaceId=t.id; f.title=t.title; f.start=t.start; f.end=t.end>t.start?t.end:null; f.kind=t.kind; }
+            render();
+          }},fmt(t.start)+' · '+t.title)))
+      : h('p',{class:'autohint'},'Nothing is set on these dates yet, so this adds new tasks.')];
+}
+function dateButton(){
+  const open=ui.form.dateOpen;
+  return h('button',{type:'button',class:'plus sm'+(open?' open':''),'aria-expanded':String(open),
+    'aria-label':'Choose specific dates','title':'Add a specific date',
+    onclick:()=>{
+      const f=ui.form; f.dateOpen=!f.dateOpen;
+      if(!f.dateOpen){ f.dates=[]; f.replaceId=null; }
+      render();
+    }},'+');
+}
+function dateRow(){
+  const f=ui.form;
+  const circles=f.dates.map(ds=>{
+    const d=dateOf(ds);
+    return h('button',{type:'button',class:'dchip','aria-pressed':'true','aria-label':'Remove '+fullDate(d),title:'Remove this date',
+      onclick:()=>{ f.dates=f.dates.filter(x=>x!==ds); f.replaceId=null; render(); }},shortDate(d)+' ×');
+  });
+  return h('div',{class:'datepick'},
+    h('div',{class:'chips'},circles),
+    h('input',{class:'inp',type:'date','aria-label':'Add a specific date',value:'',
+      onchange:e=>{
+        const v=e.target.value;
+        if(v&&!f.dates.includes(v)){ f.dates=[...f.dates,v].sort(); f.replaceId=null; }
+        render();
+      }}));
 }
 function newTaskForm(){
   const f=ui.form;
@@ -342,11 +419,24 @@ function newTaskForm(){
     h('p',{class:'autohint',id:'autohint'},autoHint()),
     h('span',{class:'field-label'},'Type'),
     h('div',{class:'chips'},kindChips),
-    h('span',{class:'field-label'},'Show on'),
-    h('div',{class:'chips'},dayChips),
+    ...dayPart(f,dayChips),
     h('div',{class:'actions'},
-      h('button',{type:'button',class:'btn primary',onclick:addTaskFromForm},'Add task'),
+      h('button',{type:'button',class:'btn primary',onclick:addTaskFromForm},f.dates.length?(f.replaceId?'Replace on these dates':'Add on these dates'):'Add task'),
       h('button',{type:'button',class:'btn',onclick:()=>{f.open=false;render();}},'Done')));
+}
+/* Put one task on every chosen date. A task picked to replace is changed on each date where it appears; otherwise it is added for that date only. Returns how many were replaced. */
+function addOnDates(title,start,end,kind,focus,replaceId){
+  let replaced=0;
+  for(const ds of ui.form.dates){
+    const day=dateOf(ds), dk=dkey(day), r=rec(dk);
+    r.oneOff=r.oneOff||[]; r.edits=r.edits||{};
+    const cur=replaceId?tasksFor(day).find(t=>t.id===replaceId):null;
+    if(cur&&r.oneOff.some(x=>x.id===cur.id)){ Object.assign(r.oneOff.find(x=>x.id===cur.id),{title,start,end,kind,focus}); replaced++; }
+    else if(cur){ r.edits[cur.id]={title,start,end}; replaced++; }
+    else r.oneOff.push({id:uid(),title,start,end,kind,focus,subs:[],days:[day.getDay()]});
+  }
+  save();
+  return replaced;
 }
 function addTaskFromForm(){
   const f=ui.form, title=f.title.trim();
@@ -356,6 +446,14 @@ function addTaskFromForm(){
   const kind=f.kind==='auto'?kindOf(title):f.kind;
   const focus=kind==='study'&&end>start?end-start:0;
   const snap=JSON.stringify(state);
+  if(f.dates.length){
+    const replaced=addOnDates(title,start,end,kind,focus,f.replaceId);
+    f.title=''; f.replaceId=null; f.start=end; f.end=null;
+    ui.focusId='nt-title';
+    render();
+    toast((replaced?'Replaced':'Added')+' for '+f.dates.length+(f.dates.length===1?' date':' dates')+' only.',{label:'Undo',fn:()=>restore(snap)});
+    return;
+  }
   state.tasks.push({id:uid(),title,start,end,kind,focus,subs:[],days:[...f.days].sort((a,b)=>a-b)});
   save();
   f.title=''; f.start=end; f.end=null;
@@ -366,18 +464,20 @@ function addTaskFromForm(){
 function addView(){
   const setDays=ds=>()=>{state.days=[...ds];save();render();};
   const dayChips=WEEK_ORDER.map(wd=>h('button',{type:'button',class:'dchip','aria-pressed':String(state.days.includes(wd)),
-    onclick:()=>{ const i=state.days.indexOf(wd); if(i>=0){ if(state.days.length>1) state.days.splice(i,1); } else state.days.push(wd); save(); render(); }},DAY_SHORT[wd]));
+    onclick:()=>{ const i=state.days.indexOf(wd); if(i>=0) state.days.splice(i,1); else state.days.push(wd); save(); render(); }},DAY_SHORT[wd]));
   return h('div',{class:'view'},
     h('div',{class:'mh'},
       h('div',null,h('h1',null,'Add tasks'),
         h('p',{class:'lead'},'Paste a whole schedule or type a single task. Time ranges (“4:20 to 6:10”), lengths (“+2 hr”), comma lists and a “total” line are read for you.')),
-      plusButton()),
+      plusButton(false)),
     ui.form.open?newTaskForm():null,
     h('label',{class:'field-label',for:'summary'},'Task summary'),
     h('textarea',{class:'summary',id:'summary',spellcheck:'false',rows:'12',
       oninput:e=>{state.summary=e.target.value;save();renderPreview();}},state.summary),
     h('span',{class:'field-label'},'Show on'),
-    h('div',{class:'chips',role:'group','aria-label':'Show on'},dayChips),
+    h('div',{class:'chips show-row',role:'group','aria-label':'Show on'},dayChips,dateButton()),
+    ui.form.dateOpen?dateRow():null,
+    h('p',{class:'autohint'},'Pick days to repeat, add specific dates with +, or both. Then type your tasks and press Add or Replace.'),
     h('div',{class:'presets'},
       h('button',{type:'button',class:'btn quiet small',onclick:setDays(ALL)},'Every day'),
       h('button',{type:'button',class:'btn quiet small',onclick:setDays([1,2,3,4,5,6])},'Mon–Sat'),
@@ -407,13 +507,27 @@ function renderPreview(){
 }
 function applyPlan(mode){
   const p=parseSummary(state.summary); if(!p.tasks.length) return;
+  const dates=ui.form.dates.map(dateOf);
+  if(!state.days.length&&!dates.length){ toast('Pick a day or a date first.'); return; }
   const snap=JSON.stringify(state);
-  const nt=p.tasks.map(t=>({...t,days:[...state.days]}));
-  if(mode==='replace'){ state.tasks=nt; state.dates={}; state.total=p.total; }
-  else { state.tasks=state.tasks.concat(nt); if(p.total!=null) state.total=p.total; }
+  // Replace my plan clears every previous task (repeating and per-date) first, then adds the new ones
+  if(mode==='replace'){ state.tasks=[]; state.dates={}; }
+  if(state.days.length){
+    // chosen days: repeating tasks
+    const nt=p.tasks.map(t=>({...t,id:uid(),days:[...state.days].sort((x,y)=>x-y)}));
+    state.tasks=state.tasks.concat(nt);
+  }
+  // chosen dates: the tasks are added for that date only
+  dates.forEach(day=>{
+    const r=rec(dkey(day));
+    r.oneOff=(r.oneOff||[]).concat(p.tasks.map(t=>({...t,id:uid(),subs:[],days:[day.getDay()]})));
+  });
+  if(p.total!=null) state.total=p.total;
   save();
   go('day');
-  toast((mode==='replace'?'Plan replaced with ':'Added ')+nt.length+(nt.length===1?' task.':' tasks.'),{label:'Undo',fn:()=>restore(snap)});
+  const nd=state.days.length?p.tasks.length+' repeating':'';
+  const dd=dates.length?p.tasks.length*dates.length+' for '+dates.length+(dates.length===1?' date':' dates'):'';
+  toast((mode==='replace'?'Cleared the old tasks and added: ':'Added: ')+[nd,dd].filter(Boolean).join(', ')+'.',{label:'Undo',fn:()=>restore(snap)});
 }
 
 /* ---------- function view ---------- */
@@ -489,11 +603,11 @@ function applyTheme(){
 function functionView(){
   const R=state.remind, S=state.settings, perm=notifState();
   const nd=new Date(), wd=nd.getDay(), now=nd.getHours()*60+nd.getMinutes(), d=peek(dkey(nd));
-  const up=state.tasks.filter(t=>t.notify!==false&&t.days.includes(wd)&&!d.skip[t.id]&&!d.done[t.id]&&t.start>now).sort(byTime).slice(0,6);
+  const up=tasksFor(nd).filter(t=>t.notify!==false&&!d.skip[t.id]&&!d.done[t.id]&&t.start>now).slice(0,6);
   const leads=LEADS.map(l=>h('button',{type:'button',class:'dchip','aria-pressed':String(R.lead===l),
     onclick:()=>{R.lead=l;save();render();}},l===0?'At start':l+' min'));
   const themeBtn=(id,label)=>h('button',{type:'button',class:'theme','aria-pressed':String(S.theme===id),
-    onclick:()=>{S.theme=id;save();applyTheme();render();}},
+    onclick:()=>{S.theme=id;S.themeSet=true;save();applyTheme();render();}},
     h('div',{class:'mini '+(id==='system'?'split':id)},h('i'),h('i'),h('i')),h('span',null,label));
   return h('div',{class:'stack'},
     h('div',{class:'mh'},h('div',null,h('h1',null,'Function'),h('p',{class:'sub'},'Reminders, feedback, sounds and the look of the app.'))),
@@ -524,7 +638,26 @@ function functionView(){
         h('div',{class:'swatches'},ACCENTS.map((a,i)=>h('button',{type:'button',class:'swatch','aria-pressed':String(S.accent===i),'aria-label':a.name,
           style:'--c:'+(resolvedDark()?a.dark:a.light),
           onclick:()=>{S.accent=i;save();applyTheme();render();}}))))))
+    ,block('Start over',h('div',{class:'panel'},
+      h('div',{class:'pick'},h('div',null,h('b',null,'Reset everything'),
+        h('small',null,'Removes every task, tick, note and date, and puts the settings back to the start. You can undo it straight after.')),
+        h('button',{type:'button',class:'btn',onclick:resetAll},'Reset'))))
   );
+}
+/* a new, empty planner: no tasks, no ticks, no notes, default settings */
+function freshEmpty(){
+  return {v:2,summary:'',days:[...ALL],total:null,tasks:[],dates:{},dayNotes:{},
+    remind:{on:true,lead:5,sound:true,system:false,awake:false},
+    settings:{theme:'system',themeSet:false,accent:0,haptics:true,tickSound:true,tickIdx:0,untickIdx:1},fired:{}};
+}
+function resetAll(){
+  if(!confirm('Reset Daybreak to new? Every task, tick, note and setting will be removed.')) return;
+  const snap=JSON.stringify(state);
+  state=freshEmpty();
+  ui.form={open:false,title:'',start:null,end:null,kind:'auto',days:[...ALL],dates:[],replaceId:null,dateOpen:false};
+  ui.open.clear();
+  save(); applyTheme(); render();
+  toast('Everything is reset.',{label:'Undo',fn:()=>restore(snap)});
 }
 
 /* ---------- reminders ---------- */
@@ -556,8 +689,8 @@ function checkReminders(){
   const R=state.remind; if(!R.on) return;
   const nd=new Date(), dk=dkey(nd), wd=nd.getDay(), now=nd.getHours()*60+nd.getMinutes()+nd.getSeconds()/60, d=peek(dk);
   let changed=false;
-  state.tasks.forEach(t=>{
-    if(t.notify===false||!t.days.includes(wd)||d.skip[t.id]||d.done[t.id]) return;
+  tasksFor(nd).forEach(t=>{
+    if(t.notify===false||d.skip[t.id]||d.done[t.id]) return;
     if(now<t.start-R.lead||now>=t.start+10) return;
     const k=dk+'|'+t.id+'|'+R.lead;
     if(state.fired[k]) return;

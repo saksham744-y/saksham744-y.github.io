@@ -203,6 +203,8 @@ textarea.inp{resize:vertical}
 .head-r{display:flex;align-items:center;gap:10px}
 .plus{flex:none;width:46px;height:46px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:400 30px/1 var(--font-body);box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 35%,transparent);transition:transform .4s var(--ease),background .3s;animation:breathe 2.8s ease-in-out infinite}
 .plus.open{transform:rotate(135deg);animation:none}
+.plus.sm{width:40px;height:40px;font-size:24px;animation:none;box-shadow:none;margin-left:4px}
+.show-row{align-items:center}
 .plus:active{transform:scale(.92)}
 .newtask{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);display:grid;gap:12px}
 .newtask h3{font:700 18px/1.2 var(--font-display)}
@@ -280,3 +282,63 @@ textarea.inp{resize:vertical}
   .themes{gap:8px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* change or add one task for one date */
+.de-body{display:grid;gap:12px}
+.de-form{display:grid;gap:4px}
+.sheet-card.de{max-height:88vh;overflow:auto}
+.datepick{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.datepick .inp{flex:1 1 180px;min-width:0}
+.datepick{display:grid;gap:8px;margin-top:8px}
+.datepick-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.datepick-row .inp{flex:1 1 180px;min-width:0}
+.quickadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.quickadd .inp{flex:1 1 110px;min-width:0}
+.quickadd .quick-title{flex:2 1 180px}
+
+/* site pages, footer, intro and the app prompt */
+.intro{max-width:760px;margin:28px auto 0;padding:0 16px;color:var(--ink)}
+.intro h2{font:700 22px/1.2 var(--font-display);margin:0 0 8px}
+.intro h3{font:600 16px/1.3 var(--font-display);margin:18px 0 6px}
+.intro p{color:var(--muted);line-height:1.6;margin:0 0 10px}
+.guide-links{list-style:none;padding:0;margin:4px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:10px;counter-reset:g}
+.guide-links li{counter-increment:g;min-width:0}
+.guide-links li:first-child{grid-column:1/-1;counter-increment:none}
+.guide-links a{position:relative;display:flex;align-items:flex-start;gap:12px;height:100%;box-sizing:border-box;padding:14px 38px 14px 16px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(160deg,var(--surface),var(--surface2));color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;line-height:1.35;overflow:hidden;transition:transform .25s var(--ease),border-color .25s,box-shadow .25s}
+.guide-links a::before{content:counter(g,decimal-leading-zero);flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font:700 12px/1 var(--font-mono)}
+.guide-links a::after{content:"↗";position:absolute;right:12px;top:10px;color:var(--muted);font-size:16px;transition:transform .25s var(--ease),color .25s}
+.guide-links a:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 16%,transparent)}
+.guide-links a:hover::after{transform:translate(2px,-2px);color:var(--accent)}
+.guide-links li:first-child a{justify-content:center;padding:13px 18px;border-radius:999px;background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 30%,transparent)}
+.guide-links li:first-child a::before{content:none}
+.guide-links li:first-child a::after{color:var(--accent-ink);position:static;margin-left:6px}
+.guide-links li:first-child a:hover{background:var(--accent);color:var(--accent-ink)}
+.guide-links li:first-child a:hover::after{color:var(--accent-ink)}
+.intro p a,.page p a,.page li a{color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:3px;transition:text-decoration-color .2s}
+.intro p a:hover,.page p a:hover,.page li a:hover{text-decoration-color:var(--accent)}
+.sitefoot{max-width:760px;margin:28px auto 0;padding:18px 16px 28px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;line-height:1.7}
+.sitefoot nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.sitefoot nav a{display:inline-flex;align-items:center;min-height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;font-weight:600;font-size:13px;transition:background .2s,color .2s,border-color .2s,transform .2s var(--ease)}
+.sitefoot nav a:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);transform:translateY(-1px)}
+.sitefoot nav a:active{transform:scale(.96)}
+.sitefoot nav a[aria-current="page"]{border-color:var(--accent);color:var(--accent)}
+.page{max-width:720px;margin:0 auto;padding:24px 16px 8px;line-height:1.7;color:var(--ink)}
+.page h1{font:700 28px/1.2 var(--font-display);margin:0 0 10px}
+.page h2{font:600 19px/1.3 var(--font-display);margin:26px 0 8px}
+.page p,.page li{color:var(--ink)}
+.page .lede{color:var(--muted);font-size:16px}
+.page .crumbs{font-size:13px;margin-bottom:10px}
+.page .crumbs a{color:var(--accent);text-decoration:none}
+.page .card{border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:linear-gradient(160deg,var(--surface),var(--surface2));margin:14px 0;transition:transform .25s var(--ease),border-color .25s,box-shadow .25s}
+.page .card:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 14%,transparent)}
+.page .card a{text-decoration:none;color:var(--ink)}
+.page .card a strong::after{content:"→";margin-left:6px;color:var(--accent);transition:transform .25s var(--ease);display:inline-block}
+.page .card:hover a strong::after{transform:translateX(4px)}
+.page .card p{margin:4px 0 0}
+.appprompt h3{font:700 20px/1.2 var(--font-display);margin:0}
+.appprompt-steps{padding-left:20px;margin:0;display:grid;gap:8px;line-height:1.5}
+.placeholder{background:#FFF3B0;border-radius:4px;padding:0 4px;color:#3D2C00}
+a.btn{text-decoration:none}
+
+@media (max-width:480px){ .guide-links{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ .guide-links a,.guide-links a::after,.sitefoot nav a,.page .card,.page .card a strong::after{transition:none} .guide-links a:hover,.sitefoot nav a:hover,.page .card:hover{transform:none} }

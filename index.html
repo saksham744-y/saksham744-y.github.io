@@ -1,11 +1,37 @@
 <!doctype html>
-<html lang="en" data-mode="light">
+<html lang="en">
 <head>
-  
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Daybreak Planner</title>
-<meta name="description" content="Turn a task summary into a timed daily schedule with reminders, notes for every day and tick sounds.">
+<title>Daybreak Planner: timed daily schedule, reminders and tick sounds</title>
+<meta name="description" content="Free daily planner: paste your tasks and get a timed schedule with reminders, notes for each day and tick sounds. Works in your browser and on Android.">
+<meta name="keywords" content="daily planner, study planner, timetable maker, schedule maker, task reminders, routine planner, time blocking, Daybreak">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="application-name" content="Daybreak">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="canonical" href="https://saksham744-y.github.io/">
+<link rel="alternate" hreflang="en" href="https://saksham744-y.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Daybreak Planner">
+<meta property="og:title" content="Daybreak Planner: timed daily schedule and reminders">
+<meta property="og:description" content="Paste your tasks and get a timed daily schedule, reminders before each task and notes for every day. Free, in your browser or on Android.">
+<meta property="og:url" content="https://saksham744-y.github.io/">
+<meta property="og:image" content="https://saksham744-y.github.io/icons/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Daybreak Planner: timed daily schedule and reminders">
+<meta name="twitter:description" content="Paste your tasks and get a timed daily schedule with reminders. Free, in your browser or on Android.">
+<meta name="twitter:image" content="https://saksham744-y.github.io/icons/icon-512.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","name":"Daybreak Planner","url":"https://saksham744-y.github.io/","inLanguage":"en"},
+ {"@type":"SoftwareApplication","name":"Daybreak Planner","url":"https://saksham744-y.github.io/","applicationCategory":"ProductivityApplication",
+   "operatingSystem":"Any modern web browser, Android","description":"Turn a task summary into a timed daily schedule with reminders, notes for every day and tick sounds.",
+   "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"image":"https://saksham744-y.github.io/icons/icon-512.png"}
+]}
+</script>
 <meta id="themeMeta" name="theme-color" content="#F2F4F9">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
@@ -16,11 +42,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="js/theme.js"></script>
 <link rel="stylesheet" href="css/app.css">
-  
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3428065384019347"
-     crossorigin="anonymous"></script>
-  
 </head>
 <body>
 <div class="app">
@@ -33,6 +56,25 @@
   </header>
   <nav class="tabs" id="tabs" role="tablist" aria-label="Views"></nav>
   <main id="main" class="main"></main>
+  <section class="intro" aria-labelledby="intro-title">
+    <h2 id="intro-title">What is Daybreak?</h2>
+    <p>Daybreak is a free daily planner. Type your tasks in the Add tab, for example “Maths 9 to 10 am” or “sleep 8pm”, and it builds a timed schedule for your day. You get a reminder before each task, notes for every date, and a tick sound when you finish something.</p>
+    <p>Tasks can repeat on the days of the week you choose, or be added to specific dates. Your plan is saved in your browser, so there is no account to create.</p>
+    <h3>Guides</h3>
+    <ul class="guide-links">
+      <li><a href="guides.html">All guides</a></li>
+      <li><a href="guide-study-day.html">How to plan a study day</a></li>
+      <li><a href="guide-weekly-timetable.html">How to build a weekly timetable</a></li>
+      <li><a href="guide-reminders.html">Using reminders to keep a routine</a></li>
+      <li><a href="guide-exams.html">How to plan revision for exams</a></li>
+    </ul>
+  </section>
+  <footer class="sitefoot">
+    <nav aria-label="Site">
+      <a href="guides.html">Guides</a><a href="about.html">About</a><a href="contact.html">Contact</a><a href="privacy-policy.html">Privacy Policy</a><a href="terms.html">Terms</a>
+    </nav>
+    <p>© 2026 Daybreak Planner. Your plan is stored in your browser.</p>
+  </footer>
 </div>
 <div id="drawer" class="drawer" role="button" tabindex="0" aria-label="Note for this day. Drag up or tap to open."><span class="grip"></span></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -40,5 +82,6 @@
 <noscript>Daybreak Planner needs JavaScript to run.</noscript>
 <script src="js/parser.js"></script>
 <script src="js/app.js"></script>
+<script src="js/download.js"></script>
 </body>
 </html>
