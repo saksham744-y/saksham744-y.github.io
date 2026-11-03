@@ -1,11 +1,11 @@
-<img src="Screenshot/heading.png" width="915">
+<img src="Screenshot/heading3.png" width="915">
 
 **Daybreak is an app as well as a website.** Type or paste your tasks in plain words, and Daybreak turns them into a timed daily schedule with reminders.
 
 - 🌐 **Website:** the original web app (PWA) in this repository, which runs in any browser and can be installed to your home screen.
-- 🌐 **Website link :**  <https://saksham744-y.github.io/Daybreak/>
+- 🌐 **Website link :**  <https://saksham744-y.github.io/>
 - 📱 **Android app:** a native app (Kotlin + Jetpack Compose) published as a file in this repository's **Releases**.
-- 📱 **App download link:** <https://github.com/saksham744-y/Daybreak/releases/download/v2.0/daybreak2.apk>
+- 📱 **App download link:** <https://github.com/saksham744-y/Daybreak/releases/download/v3.0/daybreak3.apk>
 
 Both versions are built for mobile first and keep your plan on your own device.
 
@@ -54,7 +54,7 @@ Open the site for this repository (GitHub Pages, if enabled under **Settings →
 
 ## Download the Android app from Releases
 
-1. **Open the repository** on your Android phone: <https://github.com/saksham744-y/Daybreak>
+1. **Open the repository** on your Android phone: <https://github.com/saksham744-y/>
 2. On the right side of the page (or under the repository name on mobile), tap **Releases**, then the **latest** release at the top.
 3. Scroll to **Assets** and tap the file ending in **`.apk`** to download it.
 4. If Android warns that the file type can harm your device, tap **Download anyway**.
@@ -63,7 +63,7 @@ Open the site for this repository (GitHub Pages, if enabled under **Settings →
 7. Tap **Open**. The first-time guide starts automatically.
 8. Allow **Notifications** when asked.
 
-**OR** use link :<https://github.com/saksham744-y/Daybreak/releases/download/v2.0/daybreak2.apk>
+**OR** use link :<https://github.com/saksham744-y/Daybreak/releases/download/v3.0/daybreak3.apk>
 
 ### For reliable reminders
 
@@ -89,7 +89,8 @@ Some phones stop background apps to save battery. If reminders arrive late:
 
 ## Versions
 **version 1** : <https://github.com/saksham744-y/Daybreak/releases/download/v1.0/daybreak1.apk> <br>
-**version 2** : <https://github.com/saksham744-y/Daybreak/releases/download/v2.0/daybreak2.apk> 
+**version 2** : <https://github.com/saksham744-y/Daybreak/releases/download/v2.0/daybreak2.apk> <br>
+**version 2** : <https://github.com/saksham744-y/Daybreak/releases/download/v3.0/daybreak3.apk> <br>
 
 ---
 
