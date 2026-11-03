@@ -90,7 +90,7 @@ Some phones stop background apps to save battery. If reminders arrive late:
 ## Versions
 **version 1** : <https://github.com/saksham744-y/Daybreak/releases/download/v1.0/daybreak1.apk> <br>
 **version 2** : <https://github.com/saksham744-y/Daybreak/releases/download/v2.0/daybreak2.apk> <br>
-**version 2** : <https://github.com/saksham744-y/Daybreak/releases/download/v3.0/daybreak3.apk> <br>
+**version 3** : <https://github.com/saksham744-y/Daybreak/releases/download/v3.0/daybreak3.apk> <br>
 
 ---
 
@@ -100,7 +100,9 @@ Your plan, ticks and notes are saved **only on your device**. Daybreak has no ac
 
 ## Credits
 
+
 ***Saksham yadav*** <br>
-YouTube : @Dev_Book1 *or* <https://youtube.com/@Dev_Book1>
+`*Gmail*` : **sakshamy744@gmail.com**
+`YouTube` : @Dev_Book1 *or* <https://youtube.com/@Dev_Book1>
 
 
